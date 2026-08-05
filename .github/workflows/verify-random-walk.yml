@@ -1,9 +1,8 @@
 name: Verify Random Walk Lean
 
 on:
-  push:
-    branches:
-      - chatgpt/random-walk-project-2026
+  pull_request:
+    branches: [main]
     paths:
       - FormalRandomWalk/**/*.lean
       - FormalRandomWalk/lakefile.toml
@@ -12,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
@@ -21,8 +20,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: chatgpt/random-walk-project-2026
 
       - name: Reject proof placeholders
         shell: bash
@@ -34,46 +31,12 @@ jobs:
           fi
           echo 'No sorry/admit placeholders found.'
 
-      - name: Install Lean and obtain mathlib cache
+      - name: Build and independently check Lean environment
         uses: leanprover/lean-action@v1
         with:
           lake-package-directory: FormalRandomWalk
-          auto-config: false
-          build: false
+          build: true
+          leanchecker: true
+          nanoda: true
+          nanoda-allow-sorry: false
           use-mathlib-cache: true
-
-      - name: Build and capture diagnostics
-        id: build
-        shell: bash
-        run: |
-          set +e
-          cd FormalRandomWalk
-          lake build 2>&1 | tee verification.log
-          status=${PIPESTATUS[0]}
-          printf '%s\n' "$status" > build-status.txt
-          if [ "$status" -eq 0 ]; then
-            printf 'Lean build succeeded.\n' > verification-summary.txt
-          else
-            printf 'Lean build failed with exit code %s.\n' "$status" > verification-summary.txt
-          fi
-          exit 0
-
-      - name: Commit verification diagnostics
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add FormalRandomWalk/verification.log FormalRandomWalk/build-status.txt FormalRandomWalk/verification-summary.txt
-          if git diff --cached --quiet; then
-            echo 'No diagnostics changed.'
-          else
-            git commit -m 'Record Lean verification diagnostics [skip ci]'
-            git push origin HEAD:chatgpt/random-walk-project-2026
-          fi
-
-      - name: Enforce successful build
-        shell: bash
-        run: |
-          test "$(cat FormalRandomWalk/build-status.txt)" = 0
