@@ -39,6 +39,7 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.elan/bin:$PATH"
           elan toolchain install leanprover/lean4:v4.32.2
+          elan default leanprover/lean4:v4.32.2
           lean --version
           lake --version
 
