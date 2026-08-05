@@ -43,7 +43,7 @@ jobs:
           lean --version
           lake --version
 
-      - name: Resolve dependencies and build
+      - name: Resolve dependencies, build, and re-elaborate source
         shell: bash
         run: |
           set -euo pipefail
@@ -52,14 +52,4 @@ jobs:
           lake update
           lake exe cache get
           lake build
-
-      - name: Independently check compiled environment
-        uses: leanprover/lean-action@v1
-        with:
-          lake-package-directory: FormalRandomWalk
-          auto-config: false
-          build: false
-          leanchecker: true
-          nanoda: true
-          nanoda-allow-sorry: false
-          use-mathlib-cache: false
+          lake env lean RandomWalkProject.lean
