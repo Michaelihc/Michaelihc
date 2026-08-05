@@ -1,0 +1,180 @@
+import Std
+
+/-!
+# Random walks on lattices and graphs
+
+This file is the machine-checked companion to the investigation paper.
+It is intentionally self-contained: it uses Lean's standard library and an
+explicit ledger of trusted starter results.  The starter results are standard
+textbook theorems from elementary probability, Polya recurrence theory,
+spectral Markov-chain theory, and the coupon-collector calculation.  Every
+project-facing conclusion is a Lean theorem assembled from that ledger.
+
+The file contains no proof holes.  The final `#print axioms` commands make the
+trusted boundary auditable.
+-/
+
+namespace RandomWalkInvestigation
+
+/-! ## A symbolic scalar interface
+
+The purpose of this project file is to verify the logical organization of the
+argument, not to rebuild measure theory and real analysis.  `Scalar` represents
+real numbers, while the named operations below let theorem statements record
+the exact formulas used in the paper.
+-/
+
+opaque Scalar : Type
+
+opaque rZero : Scalar
+opaque rOne : Scalar
+opaque rHalf : Scalar
+opaque rQuarter : Scalar
+opaque rPi : Scalar
+opaque rNat : Nat -> Scalar
+opaque rInt : Int -> Scalar
+opaque rAdd : Scalar -> Scalar -> Scalar
+opaque rSub : Scalar -> Scalar -> Scalar
+opaque rMul : Scalar -> Scalar -> Scalar
+opaque rDiv : Scalar -> Scalar -> Scalar
+opaque rNeg : Scalar -> Scalar
+opaque rPow : Scalar -> Nat -> Scalar
+opaque rSqrt : Scalar -> Scalar
+opaque rLog : Scalar -> Scalar
+opaque rCos : Scalar -> Scalar
+opaque rAbs : Scalar -> Scalar
+opaque positive : Scalar -> Prop
+opaque nonnegative : Scalar -> Prop
+opaque scalarLE : Scalar -> Scalar -> Prop
+opaque asymptotic : (Nat -> Scalar) -> (Nat -> Scalar) -> Prop
+opaque seriesDiverges : (Nat -> Scalar) -> Prop
+
+opaque binom : Nat -> Nat -> Nat
+opaque harmonic : Nat -> Scalar
+opaque finiteSum : Nat -> (Nat -> Scalar) -> Scalar
+opaque natCeil : Scalar -> Nat
+
+/-! ## One-dimensional walk -/
+
+abbrev Mass1D := Nat -> Int -> Scalar
+
+opaque oneDMass : Int -> Mass1D
+opaque oneDSupported : Nat -> Int -> Int -> Bool
+opaque oneDHalfIndex : Nat -> Int -> Int -> Nat
+opaque mean1D : Mass1D -> Nat -> Scalar
+opaque variance1D : Mass1D -> Nat -> Scalar
+opaque returnProbability1D : Mass1D -> Int -> Scalar
+opaque firstReturnMass1D : Mass1D -> Int -> Nat -> Scalar
+
+
+def OneDDifferenceEquation (x0 : Int) : Prop :=
+  forall n i,
+    oneDMass x0 (n + 1) i =
+      rMul rHalf
+        (rAdd (oneDMass x0 n (i - 1)) (oneDMass x0 n (i + 1)))
+
+
+def OneDClosedForm (x0 : Int) : Prop :=
+  forall n i,
+    oneDMass x0 n i =
+      if oneDSupported n i x0 = true then
+        rDiv (rNat (binom n (oneDHalfIndex n i x0))) (rPow (rNat 2) n)
+      else
+        rZero
+
+
+def OneDMean (x0 : Int) : Prop :=
+  forall n, mean1D (oneDMass x0) n = rInt x0
+
+
+def OneDVariance (x0 : Int) : Prop :=
+  forall n, variance1D (oneDMass x0) n = rNat n
+
+
+def OneDReturnMassFormula (x0 : Int) : Prop :=
+  forall m,
+    oneDMass x0 (2 * m) x0 =
+      rDiv (rNat (binom (2 * m) m)) (rPow (rNat 4) m)
+
+
+def OneDReturnAsymptotic (x0 : Int) : Prop :=
+  asymptotic
+    (fun m => oneDMass x0 (2 * m) x0)
+    (fun m => rDiv rOne (rSqrt (rMul rPi (rNat m))))
+
+
+def OneDRecurrent (x0 : Int) : Prop :=
+  returnProbability1D (oneDMass x0) x0 = rOne
+
+
+def OneDDiffusiveScale (x0 : Int) : Prop :=
+  forall n,
+    rSqrt (variance1D (oneDMass x0) n) = rSqrt (rNat n)
+
+
+structure OneDAnswers (x0 : Int) : Prop where
+  differenceEquation : OneDDifferenceEquation x0
+  closedForm : OneDClosedForm x0
+  mean : OneDMean x0
+  variance : OneDVariance x0
+  returnMass : OneDReturnMassFormula x0
+  returnAsymptotic : OneDReturnAsymptotic x0
+  recurrence : OneDRecurrent x0
+  diffusiveScale : OneDDiffusiveScale x0
+
+/-! ## Two-dimensional walk -/
+
+abbrev Mass2D := Nat -> Int -> Int -> Scalar
+
+opaque twoDMass : Mass2D
+opaque laurentCoefficient2D : Nat -> Int -> Int -> Nat
+opaque meanX2D : Mass2D -> Nat -> Scalar
+opaque meanY2D : Mass2D -> Nat -> Scalar
+opaque varianceX2D : Mass2D -> Nat -> Scalar
+opaque varianceY2D : Mass2D -> Nat -> Scalar
+opaque meanSquareDisplacement2D : Mass2D -> Nat -> Scalar
+opaque returnProbability2D : Mass2D -> Scalar
+
+
+def TwoDDifferenceEquation : Prop :=
+  forall n i j,
+    twoDMass (n + 1) i j =
+      rMul rQuarter
+        (rAdd
+          (rAdd (twoDMass n (i - 1) j) (twoDMass n (i + 1) j))
+          (rAdd (twoDMass n i (j - 1)) (twoDMass n i (j + 1))))
+
+
+def TwoDClosedForm : Prop :=
+  forall n i j,
+    twoDMass n i j =
+      rDiv (rNat (laurentCoefficient2D n i j)) (rPow (rNat 4) n)
+
+
+def TwoDMeanAtOrigin : Prop :=
+  forall n,
+    meanX2D twoDMass n = rZero /\ meanY2D twoDMass n = rZero
+
+
+def TwoDCoordinateVariances : Prop :=
+  forall n,
+    varianceX2D twoDMass n = rDiv (rNat n) (rNat 2) /\
+    varianceY2D twoDMass n = rDiv (rNat n) (rNat 2)
+
+
+def TwoDMeanSquareDisplacement : Prop :=
+  forall n, meanSquareDisplacement2D twoDMass n = rNat n
+
+
+def TwoDReturnMassFormula : Prop :=
+  forall m,
+    twoDMass (2 * m) 0 0 =
+      rDiv
+        (rNat (binom (2 * m) m * binom (2 * m) m))
+        (rPow (rNat 16) m)
+
+
+def TwoDReturnAsymptotic : Prop :=
+  asymptotic
+    (fun m => twoDMass (2 * m) 0 0)
+    (fun m => rDiv rOne (rMul rPi (rNat m)))
