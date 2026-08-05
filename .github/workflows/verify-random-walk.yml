@@ -1,0 +1,38 @@
+name: Verify Random Walk Lean
+
+on:
+  push:
+    branches:
+      - chatgpt/random-walk-project-2026
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Reject proof placeholders
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -Rnw --include='*.lean' -E '(^|[^A-Za-z0-9_])(sorry|admit)([^A-Za-z0-9_]|$)' FormalRandomWalk; then
+            echo 'Lean proof placeholder found.' >&2
+            exit 1
+          fi
+          echo 'No sorry/admit placeholders found.'
+
+      - name: Build and independently check Lean environment
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: FormalRandomWalk
+          build: true
+          leanchecker: true
+          nanoda: true
+          nanoda-allow-sorry: false
+          use-mathlib-cache: true
