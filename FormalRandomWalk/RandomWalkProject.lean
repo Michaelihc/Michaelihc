@@ -110,6 +110,7 @@ theorem oneD_second_eq {x0 : Real} (d : OneDMomentData x0) (n : Nat) :
   | succ n ih =>
       rw [d.second_step n, ih]
       norm_num [Nat.cast_succ]
+      ring
 
 theorem oneD_variance_eq_n {x0 : Real} (d : OneDMomentData x0) (n : Nat) :
     oneDVariance d n = (n : Real) := by
@@ -149,7 +150,7 @@ theorem twoD_msd_eq_n (d : TwoDMomentData) (n : Nat) :
 
 /-! ## Monotone extension: endpoint space, distribution, and covariance -/
 
-def MonotoneEndpoint (n : Nat) := Fin (n + 1)
+abbrev MonotoneEndpoint (n : Nat) := Fin (n + 1)
 
 def monotoneCoordinates (n : Nat) (k : MonotoneEndpoint n) : Nat × Nat :=
   (k.1, n - k.1)
@@ -247,8 +248,8 @@ theorem complete_uniform_stationary (N : Nat) (hN : 2 <= N) :
   constructor
   . exact uniform_sums_to_one N (by omega)
   . intro j
-    have hN0 : (N : Real) != 0 := by positivity
-    have hNm1 : (N : Real) - 1 != 0 := by
+    have hN0 : (N : Real) ≠ 0 := by positivity
+    have hNm1 : (N : Real) - 1 ≠ 0 := by
       have h : (2 : Real) <= (N : Real) := by exact_mod_cast hN
       linarith
     simp only [uniformMass]
@@ -259,8 +260,8 @@ theorem complete_stationary_unique
     (N : Nat) (hN : 2 <= N) (pi : Fin N -> Real)
     (hpi : CompleteStationary N pi) : pi = uniformMass N := by
   funext j
-  have hN0 : (N : Real) != 0 := by positivity
-  have hNm1 : (N : Real) - 1 != 0 := by
+  have hN0 : (N : Real) ≠ 0 := by positivity
+  have hNm1 : (N : Real) - 1 ≠ 0 := by
     have h : (2 : Real) <= (N : Real) := by exact_mod_cast hN
     linarith
   have hj := hpi.2 j
@@ -306,9 +307,9 @@ theorem completeCoverExpectation_K4 : completeCoverExpectation 4 = 11 / 2 := by
 
 def IsRecurrent (returnProbability : Real) : Prop := returnProbability = 1
 
-constant oneDReturnProbability : Real
-constant twoDReturnProbability : Real
-constant completeGraphCoverTime : Nat -> Real
+axiom oneDReturnProbability : Real
+axiom twoDReturnProbability : Real
+axiom completeGraphCoverTime : Nat -> Real
 
 namespace Trusted
 
