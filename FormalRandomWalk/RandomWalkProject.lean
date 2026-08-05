@@ -7,12 +7,12 @@ namespace RandomWalkProject
 noncomputable section
 
 /-!
-This file is the machine-checked companion to the paper.  It deliberately
+This file is the machine-checked companion to the paper. It deliberately
 separates project-specific deductions from a small interface of classical
-results imported as named axioms in the `Trusted` namespace.  Those axioms
-are the standard binomial path-counting identities, Polya recurrence in
-dimensions one and two, and the coupon-collector interpretation of the
-complete-graph cover time.  Every other declaration below is proved by Lean.
+results imported as named axioms in the `Trusted` namespace. Those axioms
+are standard path-counting identities, Polya recurrence in dimensions one
+and two, and the coupon-collector interpretation of complete-graph cover
+time. Every other declaration below is proved by Lean.
 -/
 
 /-! ## Exact endpoint laws and recurrence equations -/
@@ -254,7 +254,6 @@ theorem complete_uniform_stationary (N : Nat) (hN : 2 <= N) :
       linarith
     simp only [uniformMass]
     field_simp [hN0, hNm1]
-    ring
 
 theorem complete_stationary_unique
     (N : Nat) (hN : 2 <= N) (pi : Fin N -> Real)
